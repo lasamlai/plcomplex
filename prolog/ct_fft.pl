@@ -52,9 +52,10 @@ ct_fft(X,Y):-
 combine([],[],_,_,_,_):-!.
 combine([Q|QT],[R|RT],Th,K,N2,Y):-
     Kth is K*Th,
-    Wk iis 1*(cos(Kth)+ i*sin(Kth)),
-    Yk iis Q+Wk*R,
-    Ykn2 iis Q-Wk*R,
+    Wk iis 1*exp(i*Kth),
+    WkR iis R*Wk,
+    Yk iis Q+WkR,
+    Ykn2 iis Q-WkR,
     Kn2 is K + N2,
     nth0(K,Y,Yk),
     nth0(Kn2,Y,Ykn2),
@@ -62,7 +63,15 @@ combine([Q|QT],[R|RT],Th,K,N2,Y):-
     combine(QT,RT,Th,KK,N2,Y),!.
 
 every_second([],[]):-!.
-every_second([A,_,B],[A,B]):-!.
+every_second([A],[A]):-!.
+every_second([A,_,B,_,C,_,D,_,E,_|T],[A,B,C,D,E|TT]):-
+    every_second(T,TT),!.
+every_second([A,_,B,_,C,_,D,_|T],[A,B,C,D|TT]):-
+    every_second(T,TT),!.
+every_second([A,_,B,_,C,_|T],[A,B,C|TT]):-
+    every_second(T,TT),!.
+every_second([A,_,B,_|T],[A,B|TT]):-
+    every_second(T,TT),!.
 every_second([A,_|T],[A|TT]):-
     every_second(T,TT),!.
 

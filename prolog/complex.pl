@@ -12,7 +12,9 @@
              iis/2,
              c_equals/2,
              complex_canonical/3,
+             is_canonical/3,
              complex_exponential/3,
+             is_exponential/3,
              complex_number/1
          ]).
 :-op(700,xfx,user:iis).
@@ -190,8 +192,8 @@
     I<0,!,
     II is -I.
 
-(X iis X):-
-    complex_number(X),!.
+(R+I*i iis X):-
+    complex_canonical(X,R,I),!.
 
 %  Plus
 % ------
@@ -199,29 +201,38 @@
 
 (RR+I*i iis A+Z):-
     number(A),
-    complex_number(Z),
     complex_canonical(Z,R,I),!,
     RR is A+R.
 
-(XX iis A*i + B*i):-
+(X*i iis A*i + B*i):-
     number(A),
     number(B),!,
-    X is A+B,
-    XX iis X*i.
+    X is A+B.
 
-(XX iis R-A*i + B*i):-
+(R+X*i iis R-A*i + B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is B-A,
-    XX iis R+X*i.
+    X is B-A.
 
-(XX iis R+A*i + B*i):-
+(RR+A*i iis B + R + A*i):-
     number(R),
     number(A),
     number(B),!,
-    X is A+B,
-    XX iis R+X*i.
+    RR is R+B.
+
+
+(RR+A*i iis B + (R + A*i)):-
+    number(R),
+    number(A),
+    number(B),!,
+    RR is R+B.
+
+(R+X*i iis R+A*i + B*i):-
+    number(R),
+    number(A),
+    number(B),!,
+    X is A+B.
 
 (RR+II*i iis Z1+Z2):-
     complex_canonical(Z1,R1,I1),
@@ -250,19 +261,17 @@
     number(I2),!,
     I is I1-I2.
 
-(XX iis R-A*i - B*i):-
+(R-X*i iis R-A*i - B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is A+B,
-    XX iis R-X*i.
+    X is A+B.
 
-(XX iis R+A*i - B*i):-
+(R+X*i iis R+A*i - B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is A-B,
-    XX iis R+X*i.
+    X is A-B.
 
 
 (RR+I*i iis Z-A):-
@@ -285,18 +294,37 @@
 
 %  Time
 % ------
-(A*i iis i*A):-!.
+(A*i iis i*A):-
+    number(A),!.
 
-(AA iis A*i*i):-!,
-    AA iis -A.
+(-A iis A*i*i):-
+    number(A),!.
 
-(X iis A*i*B*i):-!,
-    X iis -A*B.
+(X iis A*i*B*i):-
+    number(A),
+    number(B),!,
+    X is -A*B.
 
 (I*i iis A*i*B):-
     number(A),
     number(B),!,
     I is A*B.
+
+(C*exp(i*H) iis A*exp(i*F)*(B*exp(i*G))):-
+    number(A),
+    number(B),
+    number(F),
+    number(G),!,
+    C is A*B,
+    H is F*G.
+
+(C*exp(i*H) iis A*exp(i*F)*B*exp(i*G)):-
+    number(A),
+    number(B),
+    number(F),
+    number(G),!,
+    C is A*B,
+    H is F*G.
 
 (RR+II*i iis A*Z):-
     number(A),
@@ -373,84 +401,156 @@ c_equals(A,B):-
 
 %!  complex_canonical(+Complex,-Real:number,-Imaginary:number) is semidet
 %
-%   Get abs and phase from complex number and test
+%   Get real and imaginary from complex number and test
 %   if complex_number(Complex) in the same time.
 
-complex_canonical(i,O,J):-
-    zero(O),
-    one(J),!.
-complex_canonical(R+i,R,J):-
-    number(R),
-    one(J),!.
-complex_canonical(R-i,R,-1):-
+% canonical
+complex_canonical(i,0,1):-!.
+complex_canonical(R,R,0):-
     number(R),!.
 complex_canonical(I*i,0,I):-
     number(I),!.
+complex_canonical(R+i,R,1):-
+    number(R),!.
 complex_canonical(R+I*i,R,I):-
     number(R),
     number(I),!.
-complex_canonical(R,R,0):-
+complex_canonical(R-i,R,-1):-
     number(R),!.
 complex_canonical(R-II*i,R,I):-
     number(R),
-    number(II),
-    I is -II,!.
-complex_canonical(Z,R,I):-
-    (   Z=M*exp(i*F)
-    ;   Z=M*(cos(F)+i*sin(F))
-    ),
-    pol_rec(R,I,M,F),!.
+    number(II),!,
+    I is -II.
 
-complex_canonical(R+I*i,R,I):-
+% exponential
+complex_canonical(exp(i),R,I):-!,
+    R is cos(1),
+    I is sin(1).
+complex_canonical(exp(i*F),R,I):-
+    number(F),!,
+    R is cos(F),
+    I is sin(F).
+complex_canonical(M*exp(i),R,I):-
+    number(M),!,
+    R is M*cos(1),
+    I is M*sin(1).
+complex_canonical(M*exp(i*F),R,I):-
+    number(M),
+    number(F),!,
+    pol_rec(R,I,M,F).
+
+% trigonometric
+complex_canonical(cos(F)+i*sin(F),R,I):-
+    number(F),!,
+    pol_rec(R,I,1,F).
+complex_canonical(M*(cos(F)+i*sin(F)),R,I):-
+    number(M),
+    number(F),!,
+    pol_rec(R,I,M,F).
+
+%!  is_canonical(+Z,-Real:number,-Imaginary:number) is semidet
+%
+%   Get real and imaginary from complex number and test
+%   if Complex is in canonical in the same time.
+
+
+is_canonical(i,0,1):-!.
+is_canonical(R,R,0):-
+    number(R),!.
+is_canonical(I*i,0,I):-
+    number(I),!.
+is_canonical(R+i,R,1):-
+    number(R),!.
+is_canonical(R+I*i,R,I):-
     number(R),
     number(I),!.
+is_canonical(R-i,R,-1):-
+    number(R),!.
+is_canonical(R-II*i,R,I):-
+    number(R),
+    number(II),!,
+    I is -II.
+
 
 %!  complex_exponential(+Complex,-Abs:number,-Phase:number) is semidet
 %
 %   Get abs and phase from complex number and test
-%   if complex_number(Complex) in the same time.
+%   if complex_number(Complex) in the same time
 
-complex_exponential(i,O,J):-
-    zero(O),
-    one(J),!.
-complex_exponential(M,M,O):-
-    number(M),
-    zero(O),!.
+% canonical
+complex_exponential(i,1,F):-!,
+    F is pi/2.
+complex_exponential(M,M,0):-
+    number(M),!.
 complex_exponential(M*i,M,F):-
-    number(M),
-    F is pi/2,!.
+    number(M),!,
+    F is pi/2.
 complex_exponential(R+i,M,F):-
-    number(R),
-    pol_rec(R,1,M,F),!.
-complex_exponential(R-i,M,F):-
-    number(R),
-    pol_rec(R,-1,M,F),!.
+    number(R),!,
+    pol_rec(R,1,M,F).
 complex_exponential(R+I*i,M,F):-
     number(R),
-    number(I),
-    pol_rec(R,I,M,F),!.
+    number(I),!,
+    pol_rec(R,I,M,F).
+complex_exponential(R-i,M,F):-
+    number(R),!,
+    pol_rec(R,-1,M,F).
 complex_exponential(R-I*i,M,F):-
     number(R),
-    number(I),
-    II is I,
-    pol_rec(R,II,M,F),!.
+    number(I),!,
+    II is -I,
+    pol_rec(R,II,M,F).
+
+% exponential
+complex_exponential(exp(i),1,1):-!.
+complex_exponential(exp(i*F),1,F):-
+    number(F),!.
+complex_exponential(M*exp(i),M,1):-
+    number(M),!.
 complex_exponential(M*exp(i*F),M,F):-
     number(M),
+    number(F),!.
+
+% trigonometric
+complex_exponential(cos(F)+i*sin(F),1,F):-
     number(F),!.
 complex_exponential(M*(cos(F)+i*sin(F)),M,F):-
     number(M),
     number(F),!.
 
+%!  is_exponential(+Complex,-Abs:number,-Phase:number) is semidet
+%
+%   Get abs and phase from complex number and test
+%   if Complex is in exponential or trigonometric in the same time.
+
+% exponential
+is_exponential(exp(i),1,1):-!.
+is_exponential(exp(i*F),1,F):-
+    number(F),!.
+is_exponential(M*exp(i),M,1):-
+    number(M),!.
+is_exponential(M*exp(i*F),M,F):-
+    number(M),
+    number(F),!.
+
+% trigonometric
+is_exponential(cos(F)+i*sin(F),1,F):-
+    number(F),!.
+is_exponential(M*(cos(F)+i*sin(F)),M,F):-
+    number(M),
+    number(F),!.
+
+
 pol_rec(R,I,M,F):-
     number(R),
-    number(I),
+    number(I),!,
     M is sqrt(R*R+I*I),
-    F is atan2(I,R),!.
+    F is atan2(I,R).
 pol_rec(R,I,M,F):-
     number(M),
-    number(F),
+    number(F),!,
     R is M*cos(F),
-    I is M*sin(F),!.
+    I is M*sin(F).
 
 %!  complex_number(@Complex) is semidet
 %
@@ -462,12 +562,12 @@ pol_rec(R,I,M,F):-
 %
 %    * exponential
 %    ```
-%    12*exp(i*5)
+%    12*exp(i*5), exp(i*12)
 %    ```
 %
 %    * trigonometric
 %    ```
-%    10*(cos(3)+i*sin(3))
+%    10*(cos(3)+i*sin(3)), cos(4)+i*sin(4)
 %    ```
 
 complex_number(A):-
@@ -484,8 +584,12 @@ complex_number(R - I*i):-
     number(I),!.
 complex_number(R - i):-
     number(R),!.
+complex_number(exp(i*F)):-
+    number(F),!.
 complex_number(M*exp(i*F)):-
     number(M),
+    number(F),!.
+complex_number(cos(F)+i*sin(F)):-
     number(F),!.
 complex_number(M*(cos(F)+i*sin(F))):-
     number(M),
@@ -499,6 +603,8 @@ imaginary_number(I*i,I):-
 
 zero(0):-!.
 zero(0.0):-!.
+zero(-0):-!.
+zero(-0.0):-!.
 
 one(1):-!.
 one(1.0):-!.
