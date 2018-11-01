@@ -1,5 +1,5 @@
-name(ct_fft).
-title('Cooley–Tukey FFT algorithm').
-version('0.0').
+name(plcomplex).
+title('Simple calculation of complex numbers').
+version('0.1').
 author('PiotrLi','piortlierr@gmail.com').
 packager('PiotrLi','piortlierr@gmail.com').
