@@ -9,7 +9,9 @@
  *
  */
 :-module(complex,[
+             op(700,xfx,iis),
              iis/2,
+             op(700,xfx,c_equals),
              c_equals/2,
              complex_canonical/3,
              is_canonical/3,
@@ -17,9 +19,7 @@
              is_exponential/3,
              complex_number/1
          ]).
-:-op(700,xfx,user:iis).
 :-op(700,xfx,iis).
-:-op(700,xfx,user:c_equals).
 :-op(700,xfx,c_equals).
 
 %!  iis(-Number,++Expr) is det
@@ -87,7 +87,7 @@
 %
 %   ```
 
-%  Normal (is)/2
+%  like normal (is)/2
 % ---------------
 (_ iis Y):-
     \+ ground(Y),
@@ -96,6 +96,9 @@
 (X iis Y):-
     catch((Z is Y),_,(!,fail)),!,
     X = Z.
+
+(R+I*i iis X):-
+    complex_canonical(X,R,I),!.
 
 %  Functions
 % -----------
@@ -125,6 +128,9 @@
     S is R*R+I*I,
     X iis R/S + I/S*i,!.
 
+(X iis sqrt(Z)):-!,
+    X iis Z**0.5.
+
 (X iis exp(Z)):-
     ZZ iis Z,
     complex_canonical(ZZ,R,I),
@@ -152,6 +158,9 @@
 
 %  Optimize
 % ----------
+
+(i iis i):-!.
+
 (-1 iis i*i):-!.
 
 (0 iis 0*i):-!.
@@ -161,6 +170,14 @@
 (i iis 1*i):-!.
 
 (i iis 1.0*i):-!.
+
+(-1 iis e**(i*pi)):-!.
+
+(-1 iis e**(pi*i)):-!.
+
+(AA*i iis A*i):-
+    number(A),!,
+    AA=A.
 
 (0 iis O1+O2*i):-
     zero(O1),
@@ -192,8 +209,10 @@
     I<0,!,
     II is -I.
 
-(R+I*i iis X):-
-    complex_canonical(X,R,I),!.
+/*
+(X iis X):-
+    complex_number(X),!.
+*/
 
 %  Plus
 % ------
@@ -245,7 +264,8 @@
     BB iis B,
     complex_number(AA),
     complex_number(BB),!,
-    X iis AA+BB.
+    XX iis AA+BB,
+    X=XX.
 
 %  Minus
 % -------
@@ -290,7 +310,8 @@
     BB iis B,
     complex_number(AA),
     complex_number(BB),!,
-    X iis AA-BB.
+    XX iis AA-BB,
+    X=XX.
 
 %  Time
 % ------
@@ -316,15 +337,30 @@
     number(F),
     number(G),!,
     C is A*B,
-    H is F*G.
+    H is F+G.
 
+% different brackets
 (C*exp(i*H) iis A*exp(i*F)*B*exp(i*G)):-
     number(A),
     number(B),
     number(F),
     number(G),!,
     C is A*B,
-    H is F*G.
+    H is F+G.
+
+(C*exp(i*G) iis A*(B*exp(i*G))):-
+    number(A),
+    number(B),
+    number(G),!,
+    C is A*B.
+
+% different brackets
+(C*exp(i*G) iis A*B*exp(i*G)):-
+    number(A),
+    number(B),
+    number(G),!,
+    C is A*B.
+
 
 (RR+II*i iis A*Z):-
     number(A),
@@ -343,7 +379,8 @@
     BB iis B,
     complex_number(AA),
     complex_number(BB),!,
-    X iis AA*BB.
+    XX iis AA*BB,
+    X=XX.
 
 %  Divide
 % -------
@@ -383,8 +420,115 @@
     BB iis B,
     complex_number(AA),
     complex_number(BB),!,
-    X iis AA/BB.
+    XX iis AA/BB,
+    X=XX.
 
+%  Exponentiation
+% ----------------
+(W iis i**N):-
+    integer(N),
+    K is N mod 4,
+    (   K=0,!,
+        W=1
+    ;   K=1,!,
+        W=i
+    ;   K=2,!,
+        W= -1
+    ;   K=3,!,
+        W= -i
+    ).
+
+(exp(i*P) iis i**A):-
+    number(A),!,
+    P is pi*A/2.
+
+(X iis -1**i):-!,
+    X is exp(-pi).
+(X iis -1.0**i):-!,
+    X is exp(-pi).
+
+(X iis A**i):-
+    number(A),!,
+    (   A>0,!,
+        L is log(A),
+        X = exp(i*L)
+    ;   A<0,!,
+        L is log(-A),
+        M is exp(-pi),
+        X = M*exp(i*L)
+    ;   X=0
+    ).
+
+(X iis Z**i):-
+    complex_exponential(Z,M,P),!,
+    A is e**(-P),
+    X iis A*M**i.
+
+(exp(i*L) iis A**(B*i)):-
+    number(A),
+    number(B),!,
+    catch(
+        catch(
+            L is log(A**B),
+            error(evaluation_error(float_overflow),_),
+            L is B*log(A)
+        ),
+        error(evaluation_error(undefined), context(log/1, _)),
+        (   A = 0,
+            L = 0
+        ;   L is log(A)
+        )
+    ).
+
+(A*E iis Z**i):-
+    complex_exponential(Z,M,P),!,
+    A is e**(-P),
+    E iis M**i.
+
+
+(AA*exp(i*PP) iis Z**N):-
+    number(N),
+    complex_exponential(Z,A,P),!,
+    AA is A**N,
+    PP is P*N.
+
+(XX iis N**Z):-
+    number(N),
+    complex_canonical(Z,A,B),!,
+    M is N**A,
+    E iis N**(B*i),
+    (   E = exp(_),
+        XX = M*E
+    ;   XX iis M*E
+    ).
+
+(X iis Z**Z2):-
+    complex_exponential(Z,M,P),
+    complex_canonical(Z2,A,B),!,
+    MM is M**A,
+    exp(P1) iis M**(B*i),
+    P2 iis i*P*Z2,
+    PP iis P1+P2,
+    X iis MM*exp(PP).
+
+
+(X iis N**Z):-
+    number(N),
+    complex_canonical(Z,R,I),!,
+    A is N**R,
+    B iis N**(I*i),
+    X iis A*B.
+
+(X iis A**B):-
+    AA iis A,
+    BB iis B,
+    complex_number(AA),
+    complex_number(BB),!,
+    XX iis AA**BB,
+    XX = X.
+
+(X iis A^B):-
+    X iis A ** B.
 
 
 %!  c_equals(@Term1,@Term2) is det
@@ -406,6 +550,7 @@ c_equals(A,B):-
 
 % canonical
 complex_canonical(i,0,1):-!.
+complex_canonical(-i,0,-1):-!.
 complex_canonical(R,R,0):-
     number(R),!.
 complex_canonical(I*i,0,I):-
@@ -455,6 +600,7 @@ complex_canonical(M*(cos(F)+i*sin(F)),R,I):-
 
 
 is_canonical(i,0,1):-!.
+is_canonical(-i,0,-1):-!.
 is_canonical(R,R,0):-
     number(R),!.
 is_canonical(I*i,0,I):-
@@ -479,6 +625,8 @@ is_canonical(R-II*i,R,I):-
 
 % canonical
 complex_exponential(i,1,F):-!,
+    F is pi/2.
+complex_exponential(-i,-1,F):-!,
     F is pi/2.
 complex_exponential(M,M,0):-
     number(M),!.
@@ -557,7 +705,7 @@ pol_rec(R,I,M,F):-
 %   True if Term currently is a complex number in a form like:
 %    * canonical
 %    ```
-%    4, i, 2*i, 3+2*i, 8-4*i, 3+ -2*i
+%    4, i, -1, 2*i, 3+2*i, 8-4*i, 3+ -2*i
 %    ```
 %
 %    * exponential
@@ -574,6 +722,7 @@ complex_number(A):-
     var(A),!,fail.
 
 complex_number(i):-!.
+complex_number(-i):-!.
 complex_number(R):-
     number(R),!.
 complex_number(R + I*i):-
