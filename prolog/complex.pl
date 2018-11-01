@@ -9,6 +9,7 @@
  *
  */
 :-module(complex,[
+             set_default_is/3,
              op(700,xfx,iis),
              iis/2,
              op(700,xfx,c_equals),
@@ -22,9 +23,51 @@
 :-op(700,xfx,iis).
 :-op(700,xfx,c_equals).
 
+:-dynamic a_default_is/3.
+a_default_is(is(A,B),A,B).
+
+%!  set_default_is(F,A,B) is det
+%
+%   Set function for iis/2 if you don't want use is/2.
+%
+%   Example:
+%   ```prolog
+%   ?- [user].
+%   |: my_the_best_is(A,B):-
+%   |: var(A),
+%   |: nonvar(B),
+%   |: A is B,
+%   |: format('~w is ~w\n',[A,B]).
+%   |: ^D% user://1 compiled 0.00 sec, 1 clauses
+%   true.
+%
+%   ?- set_default_is(my_the_best_is(A,B),A,B).
+%   true.
+%
+%   ?- X iis 3+i*5+15.
+%   3 is 3
+%   15 is 15
+%   18 is 3+15
+%   5 is 5+0
+%   X = 18+5*i.
+%
+%   ?- X iis 15**(3*i).
+%   8.12415060330663 is log(15**3)
+%   X = exp(i*8.12415060330663).
+%
+%   ```
+
+set_default_is(F,A,B):-
+    retractall(a_default_is(_,_,_)),
+    asserta(a_default_is(F,A,B)).
+
+default_is(A,B):-
+    a_default_is(C,A,B),
+    call(C).
+
 %!  iis(-Number,++Expr) is det
 %
-%   It is is witch imaginary number.
+%   It is is/2 witch imaginary number.
 %
 %    * abs(+Z)
 %    Return modulus of Z.
@@ -94,7 +137,7 @@
     throw(error(instantiation_error, context(complex:(iis)/2, _))).
 
 (X iis Y):-
-    catch((Z is Y),_,(!,fail)),!,
+    catch(default_is(Z,Y),_,(!,fail)),!,
     X = Z.
 
 (R+I*i iis X):-
@@ -125,7 +168,7 @@
 (X iis reciprocal(Z)):-
     ZZ iis Z,
     complex_canonical(ZZ,R,I),
-    S is R*R+I*I,
+    default_is(S,R*R+I*I),
     X iis R/S + I/S*i,!.
 
 (X iis sqrt(Z)):-!,
@@ -195,19 +238,19 @@
 (II*i iis O-I*i):-
     number(I),
     zero(O),!,
-    II is -I.
+    default_is(II,-I).
 
 (R-II*i iis R+I*i):-
     number(R),
     number(I),
     I<0,!,
-    II is -I.
+    default_is(II,-I).
 
 (R+II*i iis R-I*i):-
     number(R),
     number(I),
     I<0,!,
-    II is -I.
+    default_is(II,-I).
 
 /*
 (X iis X):-
@@ -221,43 +264,43 @@
 (RR+I*i iis A+Z):-
     number(A),
     complex_canonical(Z,R,I),!,
-    RR is A+R.
+    default_is(RR,A+R).
 
 (X*i iis A*i + B*i):-
     number(A),
     number(B),!,
-    X is A+B.
+    default_is(X,A+B).
 
 (R+X*i iis R-A*i + B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is B-A.
+    default_is(X,B-A).
 
 (RR+A*i iis B + R + A*i):-
     number(R),
     number(A),
     number(B),!,
-    RR is R+B.
+    default_is(RR,R+B).
 
 
 (RR+A*i iis B + (R + A*i)):-
     number(R),
     number(A),
     number(B),!,
-    RR is R+B.
+    default_is(RR,R+B).
 
 (R+X*i iis R+A*i + B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is A+B.
+    default_is(X,A+B).
 
 (RR+II*i iis Z1+Z2):-
     complex_canonical(Z1,R1,I1),
     complex_canonical(Z2,R2,I2),!,
-    RR is R1+R2,
-    II is I1+I2.
+    default_is(RR,R1+R2),
+    default_is(II,I1+I2).
 
 (X iis A+B):-
     AA iis A,
@@ -279,31 +322,31 @@
 (I*i iis I1*i - I2*i):-
     number(I1),
     number(I2),!,
-    I is I1-I2.
+    default_is(I,I1-I2).
 
 (R-X*i iis R-A*i - B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is A+B.
+    default_is(X,A+B).
 
 (R+X*i iis R+A*i - B*i):-
     number(R),
     number(A),
     number(B),!,
-    X is A-B.
+    default_is(X,A-B).
 
 
 (RR+I*i iis Z-A):-
     number(A),
     complex_canonical(Z,R,I),!,
-    RR is R-A.
+    default_is(RR,R-A).
 
 (RR+II*i iis Z1-Z2):-
     complex_canonical(Z1,R1,I1),
     complex_canonical(Z2,R2,I2),!,
-    RR is R1-R2,
-    II is I1-I2.
+    default_is(RR,R1-R2),
+    default_is(II,I1-I2).
 
 (X iis A-B):-
     AA iis A,
@@ -324,20 +367,20 @@
 (X iis A*i*B*i):-
     number(A),
     number(B),!,
-    X is -A*B.
+    default_is(X,-A*B).
 
 (I*i iis A*i*B):-
     number(A),
     number(B),!,
-    I is A*B.
+    default_is(I,A*B).
 
 (C*exp(i*H) iis A*exp(i*F)*(B*exp(i*G))):-
     number(A),
     number(B),
     number(F),
     number(G),!,
-    C is A*B,
-    H is F+G.
+    default_is(C,A*B),
+    default_is(H,F+G).
 
 % different brackets
 (C*exp(i*H) iis A*exp(i*F)*B*exp(i*G)):-
@@ -345,34 +388,34 @@
     number(B),
     number(F),
     number(G),!,
-    C is A*B,
-    H is F+G.
+    default_is(C,A*B),
+    default_is(H,F+G).
 
 (C*exp(i*G) iis A*(B*exp(i*G))):-
     number(A),
     number(B),
     number(G),!,
-    C is A*B.
+    default_is(C,A*B).
 
 % different brackets
 (C*exp(i*G) iis A*B*exp(i*G)):-
     number(A),
     number(B),
     number(G),!,
-    C is A*B.
+    default_is(C,A*B).
 
 
 (RR+II*i iis A*Z):-
     number(A),
     complex_canonical(Z,R,I),!,
-    RR is A*R,
-    II is A*I.
+    default_is(RR,A*R),
+    default_is(II,A*I).
 
 (RR+II*i iis Z1*Z2):-
     complex_canonical(Z1,R1,I1),
     complex_canonical(Z2,R2,I2),!,
-    RR is R1*R2 - I1*I2,
-    II is R1*I2 + I1*R2.
+    default_is(RR,R1*R2 - I1*I2),
+    default_is(II,R1*I2 + I1*R2).
 
 (X iis A*B):-
     AA iis A,
@@ -387,28 +430,28 @@
 (1 iis i/i):-!.
 (C*i iis i/A):-
     number(A),!,
-    C is 1/A.
+    default_is(C,1/A).
 (C iis i/(A*i)):-
     number(A),!,
-    C is 1/A.
+    default_is(C,1/A).
 (A iis A*i/i):-
     number(A),!.
 (C iis A*i/(B*i)):-
     number(A),
     number(B),!,
-    C is A/B.
+    default_is(C,A/B).
 (C*i iis A*i/B):-
     number(A),
     number(B),!,
-    C is A/B.
+    default_is(C,A/B).
 
 
 (RR+II*i iis A/B):-
     number(B),
     AA iis A,
     complex_canonical(AA,R,I),!,
-    RR is R/B,
-    II is I/B.
+    default_is(RR,R/B),
+    default_is(II,I/B).
 
 (X iis A/B):-
     complex_number(A),
@@ -427,7 +470,7 @@
 % ----------------
 (W iis i**N):-
     integer(N),
-    K is N mod 4,
+    default_is(K,N mod 4),
     (   K=0,!,
         W=1
     ;   K=1,!,
@@ -440,28 +483,28 @@
 
 (exp(i*P) iis i**A):-
     number(A),!,
-    P is pi*A/2.
+    default_is(P,pi*A/2).
 
 (X iis -1**i):-!,
-    X is exp(-pi).
+    default_is(X,exp(-pi)).
 (X iis -1.0**i):-!,
-    X is exp(-pi).
+    default_is(X,exp(-pi)).
 
 (X iis A**i):-
     number(A),!,
     (   A>0,!,
-        L is log(A),
+        default_is(L,log(A)),
         X = exp(i*L)
     ;   A<0,!,
-        L is log(-A),
-        M is exp(-pi),
+        default_is(L,log(-A)),
+        default_is(M,exp(-pi)),
         X = M*exp(i*L)
     ;   X=0
     ).
 
 (X iis Z**i):-
     complex_exponential(Z,M,P),!,
-    A is e**(-P),
+    default_is(A,e**(-P)),
     X iis A*M**i.
 
 (exp(i*L) iis A**(B*i)):-
@@ -469,7 +512,7 @@
     number(B),!,
     catch(
         catch(
-            L is log(A**B),
+            default_is(L,log(A**B)),
             error(evaluation_error(float_overflow),_),
             L is B*log(A)
         ),
@@ -482,20 +525,20 @@
 
 (A*E iis Z**i):-
     complex_exponential(Z,M,P),!,
-    A is e**(-P),
+    default_is(A,e**(-P)),
     E iis M**i.
 
 
 (AA*exp(i*PP) iis Z**N):-
     number(N),
     complex_exponential(Z,A,P),!,
-    AA is A**N,
-    PP is P*N.
+    default_is(AA,A**N),
+    default_is(PP,P*N).
 
 (XX iis N**Z):-
     number(N),
     complex_canonical(Z,A,B),!,
-    M is N**A,
+    default_is(M,N**A),
     E iis N**(B*i),
     (   E = exp(_),
         XX = M*E
@@ -505,7 +548,7 @@
 (X iis Z**Z2):-
     complex_exponential(Z,M,P),
     complex_canonical(Z2,A,B),!,
-    MM is M**A,
+    default_is(MM,M**A),
     exp(P1) iis M**(B*i),
     P2 iis i*P*Z2,
     PP iis P1+P2,
@@ -515,7 +558,7 @@
 (X iis N**Z):-
     number(N),
     complex_canonical(Z,R,I),!,
-    A is N**R,
+    default_is(A,N**R),
     B iis N**(I*i),
     X iis A*B.
 
@@ -565,20 +608,20 @@ complex_canonical(R-i,R,-1):-
 complex_canonical(R-II*i,R,I):-
     number(R),
     number(II),!,
-    I is -II.
+    default_is(I,-II).
 
 % exponential
 complex_canonical(exp(i),R,I):-!,
-    R is cos(1),
-    I is sin(1).
+    default_is(R,cos(1)),
+    default_is(I,sin(1)).
 complex_canonical(exp(i*F),R,I):-
     number(F),!,
-    R is cos(F),
-    I is sin(F).
+    default_is(R,cos(F)),
+    default_is(I,sin(F)).
 complex_canonical(M*exp(i),R,I):-
     number(M),!,
-    R is M*cos(1),
-    I is M*sin(1).
+    default_is(R,M*cos(1)),
+    default_is(I,M*sin(1)).
 complex_canonical(M*exp(i*F),R,I):-
     number(M),
     number(F),!,
@@ -615,7 +658,7 @@ is_canonical(R-i,R,-1):-
 is_canonical(R-II*i,R,I):-
     number(R),
     number(II),!,
-    I is -II.
+    default_is(I,-II).
 
 
 %!  complex_exponential(+Complex,-Abs:number,-Phase:number) is semidet
@@ -625,14 +668,14 @@ is_canonical(R-II*i,R,I):-
 
 % canonical
 complex_exponential(i,1,F):-!,
-    F is pi/2.
+    default_is(F,pi/2).
 complex_exponential(-i,-1,F):-!,
-    F is pi/2.
+    default_is(F,pi/2).
 complex_exponential(M,M,0):-
     number(M),!.
 complex_exponential(M*i,M,F):-
     number(M),!,
-    F is pi/2.
+    default_is(F,pi/2).
 complex_exponential(R+i,M,F):-
     number(R),!,
     pol_rec(R,1,M,F).
@@ -646,7 +689,7 @@ complex_exponential(R-i,M,F):-
 complex_exponential(R-I*i,M,F):-
     number(R),
     number(I),!,
-    II is -I,
+    default_is(II,-I),
     pol_rec(R,II,M,F).
 
 % exponential
@@ -692,13 +735,13 @@ is_exponential(M*(cos(F)+i*sin(F)),M,F):-
 pol_rec(R,I,M,F):-
     number(R),
     number(I),!,
-    M is sqrt(R*R+I*I),
-    F is atan2(I,R).
+    default_is(M,sqrt(R*R+I*I)),
+    default_is(F,atan2(I,R)).
 pol_rec(R,I,M,F):-
     number(M),
     number(F),!,
-    R is M*cos(F),
-    I is M*sin(F).
+    default_is(R,M*cos(F)),
+    default_is(I,M*sin(F)).
 
 %!  complex_number(@Complex) is semidet
 %
