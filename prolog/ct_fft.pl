@@ -45,14 +45,11 @@ ct_fft(X,Y):-
     divide(Y, Y1, Y2),
 
     % combine
-    combine(Q,R,Th,0,Y1,Y2),!.
+    combine(Q,R,Th,0,Y1,Y2).
 
-combine([],[],_,_,_,_):-!.
+combine([],[],_,_,_,_).
 combine([Q|QT],[R|RT],Th,K,[Yk|Y1],[Ykn2|Y2]):-
-    !,
-    Kth is K*Th,
-    Wk iis 1*exp(i*Kth),
-    WkR iis R*Wk,
+    WkR iis R*exp(i*(K*Th)),
     Yk iis Q+WkR,
     Ykn2 iis Q-WkR,
     succ(K,KK),
