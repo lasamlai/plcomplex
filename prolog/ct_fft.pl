@@ -42,24 +42,21 @@ ct_fft(X,Y):-
     ct_fft(Odd,R),
     Th is -2 * pi / N,
 
-    N2 is N/2,
+    divide(Y, Y1, Y2),
 
     % combine
-    combine(Q,R,Th,0,N2,Y),!.
+    combine(Q,R,Th,0,Y1,Y2),!.
 
 combine([],[],_,_,_,_):-!.
-combine([Q|QT],[R|RT],Th,K,Kn2,Y):-
+combine([Q|QT],[R|RT],Th,K,[Yk|Y1],[Ykn2|Y2]):-
     !,
     Kth is K*Th,
     Wk iis 1*exp(i*Kth),
     WkR iis R*Wk,
     Yk iis Q+WkR,
     Ykn2 iis Q-WkR,
-    nth0(K,Y,Yk),
-    nth0(Kn2,Y,Ykn2),
     succ(K,KK),
-    succ(Kn2,KKn2),
-    combine(QT,RT,Th,KK,KKn2,Y).
+    combine(QT,RT,Th,KK,Y1,Y2).
 
 deal([], [], []) :- !.
 deal([A], [A], []) :- !.
@@ -79,6 +76,12 @@ deal([A,F|T],[A|L],[F|R]):-
     !,
     deal(T,L,R).
 
+divide(A,B,C):-
+    divide_(A, B, A, C).
+
+divide_([], [], C, C).
+divide_([_,_|T],[X|L],[X|LL], C):-
+    divide_(T, L, LL, C).
 
 %!  ct_ifft(+X:list,-Y:list) is det
 %
