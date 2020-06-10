@@ -41,23 +41,25 @@ ct_fft(X,Y):-
     ct_fft(Event,Q),
     ct_fft(Odd,R),
     Th is -2 * pi / N,
+
     N2 is N/2,
 
     % combine
     combine(Q,R,Th,0,N2,Y),!.
 
 combine([],[],_,_,_,_):-!.
-combine([Q|QT],[R|RT],Th,K,N2,Y):-
+combine([Q|QT],[R|RT],Th,K,Kn2,Y):-
+    !,
     Kth is K*Th,
     Wk iis 1*exp(i*Kth),
     WkR iis R*Wk,
     Yk iis Q+WkR,
     Ykn2 iis Q-WkR,
-    Kn2 is K + N2,
     nth0(K,Y,Yk),
     nth0(Kn2,Y,Ykn2),
     succ(K,KK),
-    combine(QT,RT,Th,KK,N2,Y),!.
+    succ(Kn2,KKn2),
+    combine(QT,RT,Th,KK,KKn2,Y).
 
 deal([], [], []) :- !.
 deal([A], [A], []) :- !.
