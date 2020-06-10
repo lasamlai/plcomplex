@@ -36,11 +36,8 @@ ct_fft(X,Y):-
     length(X,N),
     length(Y,N),
 
-    % fft of even terms
-    every_second(X,Event),
+    deal(X, Event, Odd),
 
-    % fft of odd terms
-    every_second([k|X],[k|Odd]),
     ct_fft(Event,Q),
     ct_fft(Odd,R),
     Th is -2 * pi / N,
@@ -62,18 +59,24 @@ combine([Q|QT],[R|RT],Th,K,N2,Y):-
     succ(K,KK),
     combine(QT,RT,Th,KK,N2,Y),!.
 
-every_second([],[]):-!.
-every_second([A],[A]):-!.
-every_second([A,_,B,_,C,_,D,_,E,_|T],[A,B,C,D,E|TT]):-
-    every_second(T,TT),!.
-every_second([A,_,B,_,C,_,D,_|T],[A,B,C,D|TT]):-
-    every_second(T,TT),!.
-every_second([A,_,B,_,C,_|T],[A,B,C|TT]):-
-    every_second(T,TT),!.
-every_second([A,_,B,_|T],[A,B|TT]):-
-    every_second(T,TT),!.
-every_second([A,_|T],[A|TT]):-
-    every_second(T,TT),!.
+deal([], [], []) :- !.
+deal([A], [A], []) :- !.
+deal([A,F,B,G,C,H,D,I,E,J|T],[A,B,C,D,E|L],[F,G,H,I,J|R]):-
+    !,
+    deal(T,L,R).
+deal([A,F,B,G,C,H,D,I|T],[A,B,C,D|L],[F,G,H,I|R]):-
+    !,
+    deal(T,L,R).
+deal([A,F,B,G,C,H|T],[A,B,C|L], [F,G,H|R]):-
+    !,
+    deal(T,L,R).
+deal([A,F,B,G|T],[A,B|L], [F,G|R]):-
+    !,
+    deal(T,L,R).
+deal([A,F|T],[A|L],[F|R]):-
+    !,
+    deal(T,L,R).
+
 
 %!  ct_ifft(+X:list,-Y:list) is det
 %

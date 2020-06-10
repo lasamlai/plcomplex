@@ -132,6 +132,7 @@ default_is(A,B):-
 
 %  like normal (is)/2
 % ---------------
+
 (_ iis Y):-
     \+ ground(Y),
     throw(error(instantiation_error, context(complex:(iis)/2, _))).
