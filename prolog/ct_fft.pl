@@ -24,7 +24,7 @@
              ct_convolve/3
          ]).
 
-:-use_module(complex).
+:-use_module(plcomplex).
 
 %!  ct_fft(+X:list,-Y:list) is det
 %

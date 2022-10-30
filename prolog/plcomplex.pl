@@ -8,7 +8,7 @@
  * @license GPL
  *
  */
-:-module(complex,[
+:-module(plcomplex,[
              set_default_is/3,
              op(700,xfx,iis),
              iis/2,
